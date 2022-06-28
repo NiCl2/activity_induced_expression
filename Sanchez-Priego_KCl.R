@@ -47,25 +47,31 @@ roussos_kcl2 <- read.table("~/Documents/genesets/ActivityInduced/KCl_genesets.tx
   filter(GeneSetID == "up1" | GeneSetID == "up6" | GeneSetID == "down1" | GeneSetID == "down6")
 
 # LTP-induced expression and TRAP
-ltp <- read.table("~/Documents/RNAseq/LTP/LTP_ensembl.txt", col.names = c("GeneSetID", "ensembl_gene_id"))
+ltp <- read.table("~/Documents/RNAseq/LTP/Chen_LTP_hu_ensembl.txt", col.names = c("GeneSetID", "ensembl_gene_id"))
 
 # FMRP targets
 fmrp <- read.table("~/Documents/genesets/FMRP/FMRPtargetsDarnellFDR001_ensembl.txt", col.names = c("GeneSetID", "ensembl_gene_id"))
 
+# SCZ SMR genes 
+smr <- read.csv("~/Documents/genesets/PGC3/PGC3-SCZ_PrioritizationCriteria.csv") %>%
+  filter(SMRpsych == 1 & Prioritised == 1 & gene_biotype == "protein_coding") %>% mutate(GeneSetID = "SCZ_SMR") %>%
+  rename(ensembl_gene_id = Ensembl.ID) %>% dplyr::select(GeneSetID, ensembl_gene_id)
 
-
-genesets <- rbind(glu_45m, glu_4h, gaba_45m, gaba_4h, roussos_kcl1, roussos_kcl2, ltp, fmrp)
+genesets <- rbind(glu_45m, glu_4h, gaba_45m, gaba_4h, roussos_kcl1, roussos_kcl2, ltp, fmrp, smr)
+# genesets <- rbind(ltp, fmrp)
 
 # intersect all
 intersect_all <- function(df) {
   gs_matrix = data.frame(row.names = unique(df$GeneSetID))
   for (gs1 in unique(df$GeneSetID)) {
     for (gs2 in unique(df$GeneSetID)) {
-      gs_matrix[gs2, gs1] <- length(intersect(df$ensembl_gene_id[df$GeneSetID == gs1], df$ensembl_gene_id[df$GeneSetID == gs2]))
+      gs_matrix[gs2, gs1] = length(intersect(df$ensembl_gene_id[df$GeneSetID == gs1], df$ensembl_gene_id[df$GeneSetID == gs2])) / length(df$ensembl_gene_id[df$GeneSetID == gs1])
     }
   }
   return(gs_matrix)
 }
 
-
+x <- intersect_all(genesets)
+heatmap(as.matrix(x), symm = T)
+x["ltp_background", "ltp_background"]
 
